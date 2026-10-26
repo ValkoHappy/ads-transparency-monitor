@@ -1,0 +1,70 @@
+{
+  "name": "ads-transparency-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm --workspace packages/core run build && npm --workspace packages/db run build && npm --workspace apps/worker run build && npm --workspace apps/web run build && npm --workspace apps/mcp run build",
+    "dev": "npm --workspace apps/web run dev",
+    "dev:worker": "npm --workspace apps/worker run dev",
+    "dev:mcp": "npm --workspace apps/mcp run dev",
+    "dev:worker:once": "cross-env WORKER_RUN_ONCE=true npm --workspace apps/worker run dev",
+    "lint": "npm run lint --workspaces --if-present",
+    "prisma:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema packages/db/prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema packages/db/prisma/schema.prisma",
+    "prisma:push": "prisma db push --schema packages/db/prisma/schema.prisma",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run --exclude \"**/*.integration.test.ts\"",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d --wait postgres-test",
+    "test:db:reset": "cross-env DATABASE_URL=postgresql://ads:ads@localhost:55433/ads_monitor_verify?schema=public tsx scripts/test-db-reset.ts",
+    "test:integration": "npm run test:db:up && npm run test:db:reset && cross-env DATABASE_URL=postgresql://ads:ads@localhost:55433/ads_monitor_verify?schema=public AUTH_SECRET=test-secret ADMIN_EMAIL=admin@ads-monitor.local ADMIN_PASSWORD=TestOnly!ChangeInCi2026 vitest run tests/integration",
+    "test:e2e": "npm run test:db:up && npm run test:db:reset && cross-env DATABASE_URL=postgresql://ads:ads@localhost:55433/ads_monitor_verify?schema=public AUTH_SECRET=test-secret ADMIN_EMAIL=admin@ads-monitor.local ADMIN_PASSWORD=TestOnly!ChangeInCi2026 playwright test",
+    "test:smoke:google": "tsx scripts/google-smoke.ts",
+    "backfill:app-metadata": "tsx scripts/backfill-app-metadata.ts",
+    "validate:env:web": "tsx scripts/validate-runtime-env.ts web",
+    "validate:env:worker": "tsx scripts/validate-runtime-env.ts worker",
+    "validate:env:mcp": "tsx scripts/validate-runtime-env.ts mcp",
+    "deploy:server": "powershell -ExecutionPolicy Bypass -File scripts/deploy-server.ps1",
+    "deploy:server:fast": "powershell -ExecutionPolicy Bypass -File scripts/deploy-server.ps1 -SkipVerify",
+    "verify:local": "npm run prisma:generate && npm run test:unit && npm run typecheck && npm run typecheck:qa && npm run build && npm run test:integration && npm run test:e2e && docker compose --env-file .env.example -f docker-compose.yml config",
+    "verify:live": "npm run verify:local && npm run test:smoke:google",
+    "typecheck": "tsc -b tsconfig.json",
+    "typecheck:qa": "tsc -p tsconfig.qa.json --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "^16.2.6",
+    "pg": "^8.13.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^16.2.6",
+    "prisma": "^7.8.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.12"
+  },
+  "overrides": {
+    "@hono/node-server": "^1.19.15",
+    "postcss": "^8.5.15"
+  }
+}

@@ -1,0 +1,4 @@
+ALTER TABLE "SystemSettings"
+  ADD COLUMN "workerConcurrency" INTEGER NOT NULL DEFAULT 1,
+  ADD COLUMN "rawSnapshotRetentionDays" INTEGER NOT NULL DEFAULT 30,
+  ADD COLUMN "scanEventRetentionDays" INTEGER NOT NULL DEFAULT 60;

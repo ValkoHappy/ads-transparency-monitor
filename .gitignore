@@ -1,0 +1,43 @@
+node_modules/
+.next/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+.env.local
+!.env.example
+!.env.test.example
+packages/db/src/generated/
+fixtures/api-calls/*.json
+!fixtures/api-calls/README.md
+
+# Local runtime/browser state
+.tmp/
+.google-browser-profiles/
+apps/worker/.google-browser-profiles-visible/
+.playwright-mcp/
+test-results/
+playwright-report/
+
+# Logs
+*.log
+*.out.log
+*.err.log
+log.txt
+
+# Local editor/agent state
+.cursor/
+.codex/
+.codex-logs/
+.vscode/
+
+# Debug captures and one-off local artifacts
+backups/
+chrome-extension.zip
+deploy.tar
+creative*.html
+figma_block.html
+dashboard-screenshot.png
+mobile-detail-screenshot.png
+debug_*.py
+inject*.js

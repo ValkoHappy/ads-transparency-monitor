@@ -1,0 +1,16 @@
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ads_monitor_verify
+      POSTGRES_USER: ads
+      POSTGRES_PASSWORD: ads
+    ports:
+      - "55433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ads -d ads_monitor_verify"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

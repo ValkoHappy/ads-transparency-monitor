@@ -1,0 +1,74 @@
+{
+  "manifest_version": 3,
+  "name": "Ad Transparency Explorer",
+  "version": "1.0.0",
+  "description": "Extracts and displays ad creative information from Google Ads Transparency Center.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "unlimitedStorage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://adstransparency.google.com/*",
+    "https://*.googlesyndication.com/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Ad Explorer"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://adstransparency.google.com/*",
+        "https://*.googlesyndication.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    },
+    {
+      "matches": [
+        "https://adstransparency.google.com/*",
+        "https://*.googlesyndication.com/*"
+      ],
+      "js": [
+        "shared.js",
+        "config.js",
+        "modules/utils.js",
+        "modules/network-recorder.js",
+        "modules/messenger.js",
+        "modules/processor.js",
+        "modules/detector.js",
+        "modules/scanner.js",
+        "modules/badge.js",
+        "modules/scroller.js",
+        "inject.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "inject.js",
+        "modules/*.js",
+        "styles.css"
+      ],
+      "matches": [
+        "https://adstransparency.google.com/*",
+        "https://*.googlesyndication.com/*"
+      ]
+    }
+  ]
+}

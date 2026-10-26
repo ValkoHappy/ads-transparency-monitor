@@ -1,0 +1,1 @@
+ALTER TABLE "ScanJob" ADD COLUMN "refreshDetails" BOOLEAN NOT NULL DEFAULT false;

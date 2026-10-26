@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CreativeFormat {
+  TEXT
+  IMAGE
+  VIDEO
+  UNKNOWN
+}
+
+enum AppStore {
+  GOOGLE_PLAY
+  APP_STORE
+  UNKNOWN
+}
+
+enum CreativeStatus {
+  ACTIVE
+  STOPPED
+  UNKNOWN
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+  BLOCKED
+  CANCELED
+}
+
+enum ScanMode {
+  FAST
+  FULL
+  CAUTIOUS
+}
+
+enum GoogleHealthStatus {
+  OK
+  BLOCKED
+  PROBING
+  DEGRADED
+}
+
+enum ProxyStatus {
+  OK
+  BLOCKED
+  FAILED
+  CHALLENGE_REQUIRED
+  TIMEOUT
+}
+
+enum McpAccessLevel {
+  READ
+  READ_WRITE
+}
+
+enum AssetKind {
+  LANDSCAPE_IMAGE
+  APP_ICON
+  SCREENSHOT
+  COVER_IMAGE
+  VIDEO
+  LANDING_URL
+}
+
+enum RawSnapshotKind {
+  SEARCH_CREATIVES
+  CREATIVE_DETAIL
+  PREVIEW_SCRIPT
+  API_EXPORT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model McpAccessToken {
+  id          String         @id @default(cuid())
+  name        String
+  tokenPrefix String         @unique
+  tokenHash   String         @unique
+  accessLevel McpAccessLevel @default(READ)
+  isAdmin     Boolean        @default(false)
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([revokedAt, createdAt])
+  @@index([lastUsedAt])
+}
+
+model Advertiser {
+  id                       String     @id @default(cuid())
+  googleAdvertiserId       String     @unique
+  name                     String?
+  transparencyUrl          String?
+  selectedCountries        String[]   @default([])
+  lastScanAt               DateTime?
+  lastSuccessfulScanAt     DateTime?
+  lastScanStatus           ScanStatus?
+  totalCreatives           Int        @default(0)
+  activeCreatives          Int        @default(0)
+  dailyScanEnabled         Boolean    @default(true)
+  scanMode                 ScanMode?
+  requestDelayMs           Int?
+  maxPagesPerRun           Int?
+  maxCreativesPerRun       Int?
+  scanStartDate            String?
+  scanEndDate              String?
+  nextScanAt               DateTime?
+  notes                    String?
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+  creatives                Creative[]
+  scanJobs                 ScanJob[]
+  scans                    Scan[]
+
+  @@index([updatedAt])
+  @@index([dailyScanEnabled, nextScanAt])
+}
+
+model App {
+  id               String     @id @default(cuid())
+  appId            String
+  store            AppStore
+  storeUrl         String?
+  name             String?
+  developer        String?
+  category         String?
+  description      String?
+  shortDescription String?
+  firstSeenAt      DateTime   @default(now())
+  lastSeenAt       DateTime   @default(now())
+  creatives        Creative[]
+
+  @@unique([store, appId])
+  @@index([lastSeenAt])
+}
+
+model Creative {
+  id              String            @id @default(cuid())
+  creativeId      String            @unique
+  advertiserId    String
+  appDbId         String?
+  title           String?
+  description     String?
+  format          CreativeFormat    @default(UNKNOWN)
+  status          CreativeStatus    @default(UNKNOWN)
+  previewUrl      String?
+  firstShownAt    DateTime?
+  lastShownAt     DateTime?
+  publicDays      Int?
+  impressionsMin  Int?
+  impressionsMax  Int?
+  firstFoundAt    DateTime          @default(now())
+  lastFoundAt     DateTime          @default(now())
+  rawList         Json?
+  rawDetail       Json?
+  detailFetchedAt DateTime?
+  rawPreview      Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  advertiser      Advertiser        @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  app             App?              @relation(fields: [appDbId], references: [id])
+  assets          CreativeAsset[]
+  countries       CreativeCountry[]
+  rawSnapshots    RawApiSnapshot[]
+
+  @@index([advertiserId, updatedAt])
+  @@index([advertiserId, lastFoundAt])
+  @@index([appDbId])
+  @@index([previewUrl])
+  @@index([updatedAt])
+  @@index([status])
+}
+
+model CreativeAsset {
+  id         String    @id @default(cuid())
+  creativeId String
+  kind       AssetKind
+  url        String
+  width      Int?
+  height     Int?
+  createdAt  DateTime  @default(now())
+  creative   Creative  @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+
+  @@unique([creativeId, kind, url])
+}
+
+model CreativeCountry {
+  id             String   @id @default(cuid())
+  creativeId     String
+  googleGeoId    Int
+  countryCode    String?
+  countryName    String?
+  impressionsMin Int?
+  impressionsMax Int?
+  firstShownDate String?
+  lastShownDate  String?
+  raw            Json?
+  updatedAt      DateTime @updatedAt
+  creative       Creative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+
+  @@unique([creativeId, googleGeoId])
+  @@index([countryCode])
+}
+
+model ScanJob {
+  id             String      @id @default(cuid())
+  advertiserId   String
+  status         ScanStatus  @default(QUEUED)
+  scanMode       ScanMode    @default(FULL)
+  scheduledFor   DateTime    @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  errorMessage   String?
+  pagesFetched   Int         @default(0)
+  creativesFound Int         @default(0)
+  detailsFetched Int         @default(0)
+  previewsFetched Int        @default(0)
+  blockedReason  String?
+  requestDelayMs Int?
+  maxPagesPerRun Int?
+  maxCreativesPerRun Int?
+  scanStartDate String?
+  scanEndDate String?
+  nextPageToken String?
+  currentCountryCode String?
+  chunkStartedAt DateTime?
+  completedCountries String[] @default([])
+  retryOfJobId   String?
+  refreshDetails Boolean    @default(false)
+  cancelRequested Boolean    @default(false)
+  countries      String[]    @default([])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  advertiser     Advertiser  @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  scans          Scan[]
+  events         ScanEvent[]
+
+  @@index([status, createdAt])
+  @@index([advertiserId, status, createdAt])
+  @@index([updatedAt])
+  @@index([finishedAt])
+}
+
+model Scan {
+  id             String      @id @default(cuid())
+  advertiserId   String
+  scanJobId      String?
+  status         ScanStatus  @default(RUNNING)
+  scanMode       ScanMode    @default(FULL)
+  startedAt      DateTime    @default(now())
+  finishedAt     DateTime?
+  pagesFetched   Int         @default(0)
+  creativesFound Int         @default(0)
+  newCreatives   Int         @default(0)
+  detailsFetched Int         @default(0)
+  previewsFetched Int        @default(0)
+  blockedReason  String?
+  errorMessage   String?
+  advertiser     Advertiser  @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  scanJob        ScanJob?    @relation(fields: [scanJobId], references: [id], onDelete: SetNull)
+  events         ScanEvent[]
+
+  @@index([scanJobId, startedAt])
+  @@index([advertiserId, startedAt])
+}
+
+model ScanEvent {
+  id          String     @id @default(cuid())
+  scanJobId   String?
+  scanId      String?
+  level       String
+  message     String
+  data        Json?
+  createdAt   DateTime   @default(now())
+  scanJob     ScanJob?   @relation(fields: [scanJobId], references: [id], onDelete: Cascade)
+  scan        Scan?      @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanJobId, createdAt])
+  @@index([scanId, createdAt])
+}
+
+model RawApiSnapshot {
+  id          String          @id @default(cuid())
+  creativeId  String?
+  kind        RawSnapshotKind
+  url         String?
+  payload     Json
+  createdAt   DateTime        @default(now())
+  creative    Creative?       @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+
+  @@index([kind])
+  @@index([createdAt])
+  @@index([creativeId, createdAt])
+}
+
+model SystemSettings {
+  id                  String   @id @default("default")
+  defaultCountries    String[] @default([])
+  scanMode            ScanMode @default(FULL)
+  dailyScanHour       Int      @default(3)
+  scheduleType        String   @default("DAILY")
+  dailyScanHours      Int[]    @default([3])
+  scanIntervalHours   Int?
+  requestDelayMs      Int      @default(1000)
+  maxPagesPerRun      Int?
+  maxCreativesPerRun  Int?
+  workerConcurrency   Int      @default(1)
+  advertiserDelayMs   Int      @default(60000)
+  probeIntervalMs     Int      @default(3600000)
+  rawSnapshotRetentionDays Int  @default(30)
+  scanEventRetentionDays   Int  @default(60)
+  exportDefaultFields String[] @default(["creativeId", "advertiserName", "appName", "store", "format", "status", "countries", "publicDays", "firstShownAt", "lastShownAt", "impressions"])
+  proxyEnabled        Boolean  @default(false)
+  proxyUrl            String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model WorkerHeartbeat {
+  id         String   @id @default("default")
+  status     String
+  pid        Int?
+  message    String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model GoogleHealth {
+  id                String             @id @default("default")
+  status            GoogleHealthStatus @default(OK)
+  blockedUntil      DateTime?
+  lastProbeAt       DateTime?
+  lastSuccessAt     DateTime?
+  consecutiveBlocks Int                @default(0)
+  lastError         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model ProxyEndpoint {
+  id           String      @id @default(cuid())
+  url          String      @unique
+  status       ProxyStatus @default(OK)
+  lastUsedAt   DateTime?
+  blockedUntil DateTime?
+  failCount    Int         @default(0)
+  lastError    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([status, blockedUntil, lastUsedAt])
+}

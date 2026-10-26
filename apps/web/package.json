@@ -1,0 +1,16 @@
+{
+  "name": "@ad-monitor/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "next build --webpack",
+    "dev": "next dev --webpack",
+    "lint": "eslint .",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@ad-monitor/core": "0.1.0",
+    "@ad-monitor/db": "0.1.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@ad-monitor/mcp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@ad-monitor/core": "0.1.0",
+    "@ad-monitor/db": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.6.7"
+  }
+}

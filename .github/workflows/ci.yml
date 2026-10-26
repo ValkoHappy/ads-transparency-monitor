@@ -1,0 +1,42 @@
+name: Checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://ads:ads@localhost:5432/ads_monitor_verify?schema=public
+      AUTH_SECRET: ci-only-placeholder-secret-not-for-deployment
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: CiOnlyPassword2026!
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: ads_monitor_verify
+          POSTGRES_USER: ads
+          POSTGRES_PASSWORD: ads
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ads -d ads_monitor_verify"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npm run test:unit
+      - run: npm run typecheck
+      - run: npm run typecheck:qa
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run prisma:migrate:deploy
+      - run: npx vitest run tests/integration
