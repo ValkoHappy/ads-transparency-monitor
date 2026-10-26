@@ -548,6 +548,7 @@ export async function runAdvertiserScan(
       }, db);
     }
 
+    await assertNotCanceled(input.scanJobId, db);
     const disappeared = hitScanLimit || stoppedAfterDuplicatePages || resumedBrowserNativeJob ? 0 : await markDisappearedCreatives(input, scanStartedAt, db);
     const newCreatives = await countNewCreatives(input.advertiserDbId, scanStartedAt, db);
     await refreshAdvertiserCounters(input.advertiserDbId, db);

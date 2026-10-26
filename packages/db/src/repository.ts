@@ -247,19 +247,14 @@ export async function cancelScanJob(scanJobId: string, db: DbClient = defaultPri
 
   const running = await db.scanJob.updateMany({
     where: { id: scanJobId, status: "RUNNING" },
-    data: { status: "CANCELED", finishedAt: now, cancelRequested: true, errorMessage: "scan-canceled" }
+    data: { cancelRequested: true }
   });
   if (running.count === 1) {
-    await db.scan.updateMany({
-      where: { scanJobId, status: "RUNNING" },
-      data: { status: "CANCELED", finishedAt: now, errorMessage: "scan-canceled" }
-    });
-    if (job) await refreshAdvertiserCounters(job.advertiserId, db);
     await recordScanEvent({
       scanJobId,
       level: "info",
-      message: "Сканирование остановлено пользователем",
-      data: { reasonCode: "SCAN_CANCELED" }
+      message: "Запрошена остановка сканирования",
+      data: { reasonCode: "SCAN_CANCEL_REQUESTED" }
     }, db);
     return db.scanJob.findUnique({ where: { id: scanJobId } });
   }
